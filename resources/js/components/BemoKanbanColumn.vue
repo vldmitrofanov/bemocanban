@@ -8,8 +8,14 @@
     ></button>
     <h2>{{ column.title }}</h2>
 
-    <draggable tag="ul" :options="{ group: 'ITEMS' }" @change="checkMove(column.id, $event)" :list="cards" @start="drag = true"
-                                            @end="drag = false">
+    <draggable
+      tag="ul"
+      :options="{ group: 'ITEMS' }"
+      @change="checkMove(column.id, $event)"
+      :list="cards"
+      @start="drag = true"
+      @end="drag = false"
+    >
       <bemo-kanban-card
         v-for="card in cards"
         :key="card.id"
@@ -89,23 +95,32 @@ export default {
         this.$refs.observer.reset();
       });
     },
-    editCard(payload){
-        this.$emit('editCard',payload)
+    editCard(payload) {
+      this.$emit("editCard", payload);
     },
-    async checkMove(id,evt){
-        console.log(evt)
-        if(evt.added){
-            const card = Object.assign({}, evt.added.element);
-            card.column_id = id
-            card.order = evt.added.newIndex + 1
-            await axios.patch(`/api/card/${card.id}`, card);
-        }
-        if(evt.moved){
-            const card = Object.assign({}, evt.moved.element);
-            card.order = evt.moved.newIndex + 1
-            await axios.patch(`/api/card/${card.id}`, card);
-        }
-    }
+    async checkMove(id, evt) {
+      console.log(evt);
+      if (evt.added) {
+        const card = Object.assign({}, evt.added.element);
+        card.column_id = id;
+        card.order = evt.added.newIndex + 1;
+        await axios.patch(`/api/card/${card.id}`, card);
+      }
+      if (evt.moved) {
+        const newIndex = evt.moved.newIndex + 1;
+        const oldIndex = evt.moved.oldIndex + 1;
+        const card = Object.assign({}, evt.moved.element);
+        card.order = newIndex;
+        await axios.patch(`/api/card/${card.id}`, card);
+        this.cards.forEach(async (v) => {
+          if (parseInt(v.order) == newIndex) {
+            const oldCard = Object.assign({}, v);
+            oldCard.order = oldIndex;
+            await axios.patch(`/api/card/${oldCard.id}`, oldCard);
+          }
+        });
+      }
+    },
   },
 };
 </script>
@@ -133,7 +148,7 @@ export default {
   }
   ul {
     padding-left: 0;
-     display: flex;
+    display: flex;
     flex-direction: column;
     align-items: stretch;
     gap: 10px;
